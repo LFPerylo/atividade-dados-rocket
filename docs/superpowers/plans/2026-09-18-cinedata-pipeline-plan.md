@@ -2520,9 +2520,10 @@ enunciado) usando display() sobre a camada Gold."
 Tarefa procedural, feita junto com o usuário (que nunca usou a plataforma). Cada passo
 termina com uma verificação visual antes de avançar para o próximo.
 
-- [ ] **Step 1: Criar um cluster.** No Databricks, ir em "Compute" → "Create compute" →
-  cluster single-node, runtime LTS mais recente com suporte a Unity Catalog/Delta (padrão
-  já vem assim). Verificação: status do cluster fica "Running" (bolinha verde).
+- [x] **Step 1: Compute.** ~~Criar um cluster~~ — não se aplica: a conta é **Databricks
+  Free Edition**, que usa **Serverless** compute (provisionado automaticamente, sem
+  criação manual de cluster). Os notebooks anexam direto em "Serverless" no lugar de um
+  cluster nomeado.
 
 - [ ] **Step 2: Criar um Volume e subir os 5 CSVs.** Em "Catalog" → escolher/criar um
   catalog e schema → "Create" → "Volume" (ex.: `workspace.default.inputs`) → usar o botão
@@ -2535,10 +2536,10 @@ termina com uma verificação visual antes de avançar para o próximo.
   `https://github.com/LFPerylo/atividade-dados-rocket` → "Create". Verificação: a árvore de
   pastas do repositório (incluindo `code/src/` e `code/notebooks/`) aparece no Workspace.
 
-- [ ] **Step 4: Anexar o cluster e abrir o primeiro notebook.** Abrir
-  `code/notebooks/Landing_to_Bronze.ipynb` dentro do Git Folder, selecionar o cluster
-  criado no Step 1 no canto superior direito. Verificação: notebook abre sem erro e mostra
-  "Attached" ao lado do nome do cluster.
+- [ ] **Step 4: Anexar o compute e abrir o primeiro notebook.** Abrir
+  `code/notebooks/Landing_to_Bronze.ipynb` dentro do Git Folder, selecionar **Serverless**
+  no seletor de compute no canto superior direito. Verificação: notebook abre sem erro e
+  mostra "Serverless" conectado ao lado do nome.
 
 Sem commit nesta task (não há mudança de código — é configuração de ambiente).
 
@@ -2583,8 +2584,8 @@ anteriores.
   `cinedata_pipeline`.
 
 - [ ] **Step 2: Criar a task `to_Bronze`.** Type: Notebook. Path:
-  `code/notebooks/Landing_to_Bronze.ipynb` (dentro do Git Folder). Cluster: o mesmo
-  criado na Task 17 (ou um Job Cluster novo). Sem dependências.
+  `code/notebooks/Landing_to_Bronze.ipynb` (dentro do Git Folder). Compute: **Serverless**
+  (Free Edition não oferece cluster job dedicado). Sem dependências.
 
 - [ ] **Step 3: Criar a task `to_Silver`.** Type: Notebook, path
   `code/notebooks/Bronze_to_Silver.ipynb`. Em "Depends on", selecionar `to_Bronze`.
