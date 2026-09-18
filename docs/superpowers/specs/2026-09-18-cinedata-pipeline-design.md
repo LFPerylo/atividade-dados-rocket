@@ -203,5 +203,5 @@ descrevendo o que foi entregue, seguindo a convenção de atribuição do ambien
 ## 10. Convenção de commits
 
 Um commit por fase concluída, mensagem em português, descrevendo o que foi entregue e por
-quê (não apenas "o quê"). Segue a convenção de atribuição já configurada no ambiente
-(linha `Co-Authored-By` ao final da mensagem).
+quê (não apenas "o quê"). Sem linha de coautoria/atribuição a ferramentas de IA — a pedido
+explícito do usuário, o que sobrepõe a convenção padrão do ambiente.

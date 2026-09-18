@@ -25,8 +25,9 @@ Git Folders.
 - Toda função de `src/` tem teste em `code/tests/unit/` escrito **antes** da implementação
   (TDD) e deve passar localmente antes de qualquer execução no Databricks.
 - `Inputs/` (CSVs brutos) nunca é commitado no git — vai para `.gitignore`.
-- Um commit por tarefa concluída, mensagem em português, seguindo a convenção de
-  atribuição já configurada no ambiente (`Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>`).
+- Um commit por tarefa concluída, mensagem em português, sem linha de coautoria/atribuição
+  a ferramentas de IA (a pedido explícito do usuário — sobrepõe a convenção padrão do
+  ambiente).
 - `docs/stream.pdf` é a fonte de verdade de qualquer regra de negócio — em caso de dúvida
   durante a implementação, reconferir o PDF antes de assumir um comportamento.
 
@@ -184,9 +185,7 @@ git commit -m "chore: cria scaffold do projeto (estrutura, deps, lint, CI)
 
 Prepara a base de engenharia (ambiente Python, ruff, pytest, GitHub Actions)
 antes de qualquer lógica de negócio, para que todo código futuro já nasça
-testável e com CI validando cada push.
-
-Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
+testável e com CI validando cada push."
 ```
 
 ---
@@ -256,9 +255,7 @@ git add code/src/common/spark_session.py code/tests/conftest.py
 git commit -m "test: adiciona fixture de SparkSession local para os testes
 
 Permite testar toda a lógica de negócio das próximas fases sem precisar de
-um cluster Databricks ligado — feedback em segundos em vez de minutos.
-
-Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
+um cluster Databricks ligado — feedback em segundos em vez de minutos."
 ```
 
 ---
@@ -362,9 +359,7 @@ git commit -m "feat(bronze): adiciona ingestion_datetime e conversao da cotacao 
 A coluna ingestion_datetime rastreia o instante exato em que cada linha
 entrou na camada Bronze, exigencia do enunciado para auditoria/append.
 cotacao_dolar_para_dataframe isola a conversao da resposta da API do
-Banco Central em DataFrame, sem misturar a chamada HTTP com a logica Spark.
-
-Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
+Banco Central em DataFrame, sem misturar a chamada HTTP com a logica Spark."
 ```
 
 ---
@@ -481,9 +476,7 @@ git add code/src/common/api_client.py code/tests/unit/common/
 git commit -m "feat(bronze): adiciona cliente da API PTAX de cotacao do dolar
 
 Isola a chamada HTTP e a formatacao de data (MM-DD-AAAA, exigencia da API)
-em funcoes puras e testaveis com mock, sem depender de rede nos testes.
-
-Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
+em funcoes puras e testaveis com mock, sem depender de rede nos testes."
 ```
 
 ---
@@ -576,9 +569,7 @@ git commit -m "feat(bronze): adiciona notebook Landing_to_Bronze
 
 Notebook fino: le os 5 CSVs e a API do Banco Central, delega toda a logica
 de negocio para src/bronze, e apenas orquestra leitura/escrita Delta no
-Databricks (dbutils, Volumes, display() ficam isolados aqui).
-
-Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
+Databricks (dbutils, Volumes, display() ficam isolados aqui)."
 ```
 
 ---
@@ -807,9 +798,7 @@ git commit -m "feat(silver): adiciona transformacao de tb_info_filmes
 Normaliza status antes de traduzir (ruido/hifen/caixa), deduplica mantendo
 o registro mais recente por ingestion_datetime, e faz parsing robusto de
 datas em multiplos formatos, tratando como NULL apenas o que for realmente
-impossivel de converter -- conforme a secao 1.3.1 do enunciado.
-
-Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
+impossivel de converter -- conforme a secao 1.3.1 do enunciado."
 ```
 
 ---
@@ -994,9 +983,7 @@ git commit -m "feat(silver): adiciona transformacao de tb_metricas_engajamento
 Limpa separador decimal inconsistente, aplica conversao de tipagem segura
 para neutralizar o column shift da base bruta (texto em coluna numerica
 vira NULL sem quebrar o pipeline), e invalida notas fora de 0-10 e
-contagens negativas -- conforme a secao 1.3.3 do enunciado.
-
-Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
+contagens negativas -- conforme a secao 1.3.3 do enunciado."
 ```
 
 ---
@@ -1145,9 +1132,7 @@ git commit -m "feat(silver): adiciona transformacao de tb_avaliacoes_usuarios
 
 Remove duplicatas exatas, invalida notas fora de 0-10, e preenche
 comentarios vazios/whitespace com texto padronizado, conforme a
-secao 1.3.4 do enunciado.
-
-Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
+secao 1.3.4 do enunciado."
 ```
 
 ---
@@ -1272,9 +1257,7 @@ git commit -m "feat(silver): adiciona transformacao de tb_generos
 Trata a inconsistencia de separadores (virgula vs ponto-e-virgula) antes
 do split, explode a coluna genres em uma linha por genero, e remove
 residuos em branco ou numericos deixados pelo column shift da origem,
-conforme a secao 1.3.5 do enunciado.
-
-Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
+conforme a secao 1.3.5 do enunciado."
 ```
 
 ---
@@ -1421,9 +1404,7 @@ git commit -m "feat(silver): adiciona transformacao de tb_pessoas_empresas
 
 Unifica cast/directors/writers/production_companies em uma unica dimensao
 categorizada por tipo_entidade, padroniza capitalizacao e remove
-duplicatas, conforme a secao 1.3.6 do enunciado.
-
-Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
+duplicatas, conforme a secao 1.3.6 do enunciado."
 ```
 
 ---
@@ -1565,9 +1546,7 @@ git commit -m "feat(silver): adiciona forward-fill da serie de cotacao do dolar
 A API do Banco Central nao retorna cotacao em fins de semana/feriados;
 preencher_serie_continua gera o calendario completo e aplica forward fill
 para que toda data tenha uma cotacao associada, conforme a secao 1.3.7
-do enunciado.
-
-Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
+do enunciado."
 ```
 
 ---
@@ -1754,9 +1733,7 @@ git commit -m "feat(silver): adiciona transformacao de tb_financeiro_filmes
 Higieniza valores monetarios (simbolos, milhar, textos de ausencia),
 invalida zeros/negativos, converte para BRL com a cotacao obtida da API
 do Banco Central, e deriva lucro/margem sem dividir por zero nem propagar
-NULL indevidamente, conforme a secao 1.3.2 do enunciado.
-
-Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
+NULL indevidamente, conforme a secao 1.3.2 do enunciado."
 ```
 
 ---
@@ -1868,9 +1845,7 @@ git commit -m "feat(silver): adiciona notebook Bronze_to_Silver
 
 Orquestra as 7 transformacoes silver (filmes, financeiro, engajamento,
 avaliacoes, generos, pessoas/empresas, cotacao), delegando toda a regra
-de negocio para src/silver ja validado por testes unitarios.
-
-Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
+de negocio para src/silver ja validado por testes unitarios."
 ```
 
 ---
@@ -2187,9 +2162,7 @@ Constroi dim_movies, dim_genres, dim_people, dim_companies, dim_reviews,
 fact_movies_performance e as tres bridge tables com surrogate keys via
 row_number(), garantindo que a fato nao duplique grao mesmo com filmes
 tendo multiplos generos/atores/produtoras, conforme a Entrega 1 da
-Parte 2 do enunciado.
-
-Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
+Parte 2 do enunciado."
 ```
 
 ---
@@ -2351,9 +2324,7 @@ Usa coalesce() com fallback textual em cada campo que pode vir nulo
 (receita, orcamento, atores, diretor, sinopse) antes da concatenacao
 final, evitando a 'casca de banana' descrita no enunciado -- onde um
 unico campo nulo faz o documento inteiro (e o filme) desaparecer da
-tabela de contexto silenciosamente.
-
-Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
+tabela de contexto silenciosamente."
 ```
 
 ---
@@ -2537,9 +2508,7 @@ git commit -m "feat(gold): adiciona notebook Silver_to_Gold com Star Schema e An
 
 Orquestra a construcao do Star Schema, a tabela gold_genai_movies_context,
 e responde as 6 perguntas de negocio do Desafio de Analytics (secao 4 do
-enunciado) usando display() sobre a camada Gold.
-
-Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
+enunciado) usando display() sobre a camada Gold."
 ```
 
 ---
@@ -2649,9 +2618,7 @@ git commit -m "feat(devops): adiciona orquestracao via Databricks Workflow
 Job cinedata_pipeline com 3 tasks (to_Bronze -> to_Silver -> to_Gold) com
 dependencia explicita entre elas e agendamento diario, simulando uma
 rotina real de atualizacao de dados em producao, conforme a secao 3 do
-enunciado.
-
-Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
+enunciado."
 ```
 
 ---
