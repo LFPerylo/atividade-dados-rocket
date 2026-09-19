@@ -1,6 +1,8 @@
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
-from pyspark.sql.window import Window
+
+from src.common.deduplicacao import manter_registro_mais_recente_e_completo
+from src.common.tipagem import converter_texto_para_numero_seguro
 
 _TRADUCAO_STATUS = {
     "RELEASED": "Lançado",
@@ -47,13 +49,8 @@ def traduzir_status(df: DataFrame, coluna: str = "status_filme") -> DataFrame:
 def deduplicar_filmes_mais_recentes(
     df: DataFrame, chave: str = "id_filme", coluna_data: str = "ingestion_datetime"
 ) -> DataFrame:
-    """Mantém, por filme, apenas o registro com o ingestion_datetime mais recente."""
-    janela = Window.partitionBy(chave).orderBy(F.col(coluna_data).desc())
-    return (
-        df.withColumn("_rn", F.row_number().over(janela))
-        .filter(F.col("_rn") == 1)
-        .drop("_rn")
-    )
+    """Mantém, por filme, o registro mais recente (no empate, o mais completo)."""
+    return manter_registro_mais_recente_e_completo(df, chave, coluna_data)
 
 
 def converter_data_lancamento(
@@ -89,6 +86,7 @@ def transformar_info_filmes(df: DataFrame) -> DataFrame:
     df = normalizar_status(df)
     df = traduzir_status(df)
     df = deduplicar_filmes_mais_recentes(df)
+    df = converter_texto_para_numero_seguro(df, "duracao_minutos", "int")
     df = converter_data_lancamento(df)
     df = adicionar_ano_lancamento(df)
     return df.select(

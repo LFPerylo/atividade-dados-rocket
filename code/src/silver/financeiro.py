@@ -1,20 +1,33 @@
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 
-_TEXTOS_AUSENTES = {"unknown", "não informado", "nao informado", "n/a", ""}
+from src.common.deduplicacao import manter_registro_mais_recente_e_completo
+
+# Formatos reais vistos na origem: "97000000", "$ 97000000", "USD 150000000", "34.0M", "250.5K".
+_PADRAO_VALOR_MONETARIO = (
+    r"^(?:US\$|USD|R\$|\$|€)?\s*(\d+(?:\.\d+)?|\d{1,3}(?:,\d{3})+(?:\.\d+)?)\s*([KMB])?$"
+)
+_MULTIPLICADOR = {"K": 1_000, "M": 1_000_000, "B": 1_000_000_000}
 
 
 def higienizar_valor_monetario(df: DataFrame, coluna: str) -> DataFrame:
-    """Remove símbolos de moeda/milhar e trata texto de ausência como NULL antes de converter."""
-    texto = F.trim(F.col(coluna).cast("string"))
-    e_ausente = F.lower(texto).isin(*_TEXTOS_AUSENTES) | texto.isNull()
-    numero_limpo = F.regexp_replace(texto, r"[^0-9.\-]", "")
-    return df.withColumn(
-        coluna,
-        F.when(e_ausente | (numero_limpo == ""), None).otherwise(
-            numero_limpo.cast("decimal(18,2)")
-        ),
+    """Converte texto monetário em decimal, sem apagar caracteres arbitrários.
+
+    Aceita prefixo de moeda e sufixo K/M/B ("34.0M" = 34 milhões). Qualquer outra coisa
+    ("Unknown", "N/A", "Não Informado", texto vazado) vira NULL: apagar letras juntaria
+    dígitos soltos em um valor falso, e apagar o "M" transformaria 34 milhões em 34.
+    """
+    texto = F.upper(F.trim(F.col(coluna).cast("string")))
+    numero = F.regexp_replace(F.regexp_extract(texto, _PADRAO_VALOR_MONETARIO, 1), ",", "")
+    sufixo = F.regexp_extract(texto, _PADRAO_VALOR_MONETARIO, 2)
+    multiplicador = F.create_map(
+        *[F.lit(x) for par in _MULTIPLICADOR.items() for x in par]
+    )[sufixo]
+    valido = texto.rlike(_PADRAO_VALOR_MONETARIO)
+    valor = numero.cast("decimal(18,2)") * F.coalesce(
+        multiplicador.cast("decimal(18,2)"), F.lit(1).cast("decimal(18,2)")
     )
+    return df.withColumn(coluna, F.when(valido, valor).otherwise(None).cast("decimal(18,2)"))
 
 
 def invalidar_valores_nao_positivos(df: DataFrame, colunas: list[str]) -> DataFrame:
@@ -59,6 +72,7 @@ def transformar_financeiro_filmes(df: DataFrame, cotacao: float) -> DataFrame:
     df = invalidar_valores_nao_positivos(df, ["orcamento_usd", "receita_usd"])
     df = calcular_valores_brl(df, cotacao)
     df = calcular_lucro_e_margem(df)
+    df = manter_registro_mais_recente_e_completo(df, "id_filme")
     return df.select(
         "id_filme", "orcamento_usd", "receita_usd", "lucro_usd",
         "margem_lucro_percentual", "orcamento_brl", "receita_brl", "lucro_brl",

@@ -1,26 +1,22 @@
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 
-_PADRAO_DECIMAL = r"^-?\d+(\.\d+)?$"
-_PADRAO_INTEIRO = r"^-?\d+$"
+from src.common.deduplicacao import manter_registro_mais_recente_e_completo
+from src.common.tipagem import converter_texto_para_numero_seguro
 
 
 def limpar_separador_decimal(df: DataFrame, coluna: str) -> DataFrame:
-    """Troca vírgula por ponto quando o valor usa vírgula como separador decimal."""
-    valor = F.regexp_replace(F.trim(F.col(coluna).cast("string")), r"[^0-9,.\-]", "")
+    """Troca vírgula decimal por ponto ("154,34" -> "154.34"); demais valores ficam como estão.
+
+    Não remove caracteres: apagar letras/símbolos juntaria os dígitos de texto vazado pelo
+    column shift ("2009 ... 2010") em um número falso. O que não for número válido vira NULL
+    na conversão segura seguinte.
+    """
+    valor = F.trim(F.col(coluna).cast("string"))
     valor_corrigido = F.when(
         valor.rlike(r"^-?\d+,\d+$"), F.regexp_replace(valor, ",", ".")
     ).otherwise(valor)
     return df.withColumn(coluna, valor_corrigido)
-
-
-def converter_texto_para_numero_seguro(
-    df: DataFrame, coluna: str, tipo: str = "double"
-) -> DataFrame:
-    """Converte para número apenas quando o texto é um número válido; senão, NULL."""
-    padrao = _PADRAO_DECIMAL if tipo == "double" else _PADRAO_INTEIRO
-    valor = F.trim(F.col(coluna).cast("string"))
-    return df.withColumn(coluna, F.when(valor.rlike(padrao), valor.cast(tipo)).otherwise(None))
 
 
 def invalidar_notas_fora_da_escala(
@@ -64,6 +60,7 @@ def transformar_metricas_engajamento(df: DataFrame) -> DataFrame:
     df = invalidar_contagens_negativas(
         df, ["qtd_votos_tmdb", "qtd_votos_imdb", "popularidade"]
     )
+    df = manter_registro_mais_recente_e_completo(df, "id_filme")
     return df.select(
         "id_filme", "popularidade", "nota_media_tmdb", "qtd_votos_tmdb",
         "nota_media_imdb", "qtd_votos_imdb",

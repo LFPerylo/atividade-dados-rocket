@@ -84,6 +84,30 @@ def test_converter_data_lancamento_formato_dia_barra_mes_e_datas_impossiveis(spa
     assert valores[5] is None
 
 
+def test_duracao_minutos_vira_inteiro_e_texto_vazado_vira_null(spark):
+    def linha(id_, runtime):
+        return (
+            id_, "tt", "T", "T", "en", "2020-01-01", runtime,
+            "Released", "s", "t", "2026-01-01T00:00:00",
+        )
+
+    df = spark.createDataFrame(
+        [linha(1, "108"), linha(2, "texto vazado do overview")],
+        [
+            "id", "tconst", "title", "original_title", "original_language",
+            "release_date", "runtime", "status", "overview", "tagline",
+            "ingestion_datetime",
+        ],
+    )
+
+    resultado = transformar_info_filmes(df)
+    valores = {row["id_filme"]: row["duracao_minutos"] for row in resultado.collect()}
+
+    assert dict(resultado.dtypes)["duracao_minutos"] == "int"
+    assert valores[1] == 108
+    assert valores[2] is None
+
+
 def test_transformar_info_filmes_produz_colunas_finais_e_ano_lancamento(spark):
     df = spark.createDataFrame(
         [
