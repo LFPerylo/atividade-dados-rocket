@@ -21,6 +21,7 @@ def build_local_spark_session(app_name: str = "cinedata-tests") -> SparkSession:
         .config("spark.sql.session.timeZone", "UTC")
         .config("spark.driver.extraJavaOptions", "-Duser.timezone=UTC")
         .config("spark.executor.extraJavaOptions", "-Duser.timezone=UTC")
+        .config("spark.sql.ansi.enabled", "true")
         .config("spark.ui.enabled", "false")
         .getOrCreate()
     )

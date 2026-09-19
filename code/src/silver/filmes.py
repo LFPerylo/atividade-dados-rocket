@@ -55,8 +55,15 @@ def deduplicar_filmes_mais_recentes(
 def converter_data_lancamento(
     df: DataFrame, coluna_origem: str = "release_date", coluna_destino: str = "data_lancamento"
 ) -> DataFrame:
-    """Testa múltiplos formatos de data; se nenhum funcionar, o valor vira NULL."""
-    tentativas = [F.to_date(F.col(coluna_origem), fmt) for fmt in _FORMATOS_DATA]
+    """Testa múltiplos formatos de data; se nenhum funcionar, o valor vira NULL.
+
+    Usa try_to_timestamp porque com ANSI ligado (padrão do Databricks Serverless) to_date
+    lança erro quando o formato não bate, em vez de devolver NULL.
+    """
+    tentativas = [
+        F.try_to_timestamp(F.col(coluna_origem), F.lit(fmt)).cast("date")
+        for fmt in _FORMATOS_DATA
+    ]
     return df.withColumn(coluna_destino, F.coalesce(*tentativas))
 
 
