@@ -1,10 +1,18 @@
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 
+# Domínio de gêneros do catálogo TMDB. Na origem, a coluna traz também sinopses, caminhos de
+# imagem e números deslocados (column shift); só o que pertence a este conjunto é gênero.
+_GENEROS_VALIDOS = [
+    "Action", "Adventure", "Animation", "Comedy", "Crime", "Documentary", "Drama", "Family",
+    "Fantasy", "History", "Horror", "Music", "Mystery", "Romance", "Science Fiction",
+    "TV Movie", "Thriller", "War", "Western",
+]
+
 
 def padronizar_separador_generos(df: DataFrame, coluna: str = "genres") -> DataFrame:
-    """Troca ';' por ',' para que o split funcione com um único separador."""
-    return df.withColumn(coluna, F.regexp_replace(F.col(coluna), ";", ","))
+    """Troca ';' e '|' por ',' para que o split funcione com um único separador."""
+    return df.withColumn(coluna, F.regexp_replace(F.col(coluna), r"[;|]", ","))
 
 
 def explodir_generos(df: DataFrame, coluna: str = "genres") -> DataFrame:
@@ -16,13 +24,8 @@ def explodir_generos(df: DataFrame, coluna: str = "genres") -> DataFrame:
 
 
 def remover_residuos_invalidos(df: DataFrame, coluna: str = "nome_genero") -> DataFrame:
-    """Remove valores em branco ou puramente numéricos (resíduos de column shift)."""
-    valido = (
-        F.col(coluna).isNotNull()
-        & (F.col(coluna) != "")
-        & (~F.col(coluna).rlike(r"^-?\d+(\.\d+)?$"))
-    )
-    return df.filter(valido)
+    """Mantém apenas valores do domínio de gêneros (descarta branco, número, texto, caminho)."""
+    return df.filter(F.col(coluna).isin(*_GENEROS_VALIDOS))
 
 
 def transformar_generos(df: DataFrame) -> DataFrame:

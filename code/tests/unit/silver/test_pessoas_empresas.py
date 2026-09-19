@@ -25,6 +25,38 @@ def test_explodir_coluna_entidade_descarta_valor_n_a(spark):
     assert resultado.count() == 0
 
 
+def test_explodir_coluna_entidade_limpa_residuos_de_aspas_e_barras(spark):
+    df = spark.createDataFrame(
+        [(1, '\\lance Henriksen, Sam Clarke"')], ["id", "cast"]
+    )
+
+    resultado = explodir_coluna_entidade(df, "cast", "Ator")
+
+    nomes = {row["nome_entidade"] for row in resultado.collect()}
+    assert nomes == {"lance Henriksen", "Sam Clarke"}
+
+
+def test_explodir_coluna_entidade_descarta_numeros_caminhos_e_frases_longas(spark):
+    frase = "Until the day a veil falls over the two gods on the run does the existence of poets"
+    df = spark.createDataFrame(
+        [(1, f"6.1, 766, /abc123.jpg, poster.png, X, {frase}, Ryan Reynolds")],
+        ["id", "cast"],
+    )
+
+    resultado = explodir_coluna_entidade(df, "cast", "Ator")
+
+    assert [row["nome_entidade"] for row in resultado.collect()] == ["Ryan Reynolds"]
+
+
+def test_explodir_coluna_entidade_trata_pipe_como_separador(spark):
+    df = spark.createDataFrame([(1, "Marvel Studios|Legendary Pictures")], ["id", "cast"])
+
+    resultado = explodir_coluna_entidade(df, "cast", "Produtora")
+
+    nomes = {row["nome_entidade"] for row in resultado.collect()}
+    assert nomes == {"Marvel Studios", "Legendary Pictures"}
+
+
 def test_padronizar_capitalizacao_usa_title_case(spark):
     df = spark.createDataFrame([(1, "RYAN reynolds")], ["id_filme", "nome_entidade"])
 

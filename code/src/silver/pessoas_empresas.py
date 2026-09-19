@@ -9,18 +9,30 @@ _COLUNA_PARA_TIPO = {
 }
 
 _VALORES_AUSENTES = {"", "N/A", "n/a", "None"}
+_TAMANHO_MAXIMO_NOME = 60  # acima disso é frase/sinopse vazada, não nome de pessoa ou empresa
+_PADRAO_NUMERO = r"^-?\d+([.,]\d+)?$"
+_PADRAO_CAMINHO_IMAGEM = r"(?i)^/|\.(jpg|jpeg|png)$"
 
 
 def explodir_coluna_entidade(df: DataFrame, coluna: str, tipo_entidade: str) -> DataFrame:
-    """Desmembra uma coluna de entidades (cast/directors/writers/production_companies)."""
-    valores = F.split(F.regexp_replace(F.col(coluna), ";", ","), r"\s*,\s*")
+    """Desmembra uma coluna de entidades (cast/directors/writers/production_companies).
+
+    Limpa resíduos de aspas/barras nas pontas ("\\lance Henriksen", 'Sam Clarke"') e descarta o
+    que não é nome: vazio, número, caminho de imagem, frase longa ou um único caractere.
+    """
+    valores = F.split(F.regexp_replace(F.col(coluna), r"[;|]", ","), r"\s*,\s*")
+    nome = F.regexp_replace(F.trim(F.col("nome_entidade")), r'^[\\"\s]+|[\\"\s]+$', "")
     return (
         df.select("id", F.explode(valores).alias("nome_entidade"))
-        .withColumn("nome_entidade", F.trim(F.col("nome_entidade")))
+        .withColumn("nome_entidade", nome)
         .withColumn("tipo_entidade", F.lit(tipo_entidade))
         .filter(
             F.col("nome_entidade").isNotNull()
             & (~F.col("nome_entidade").isin(*_VALORES_AUSENTES))
+            & (~F.col("nome_entidade").rlike(_PADRAO_NUMERO))
+            & (~F.col("nome_entidade").rlike(_PADRAO_CAMINHO_IMAGEM))
+            & (F.length("nome_entidade") >= 2)
+            & (F.length("nome_entidade") <= _TAMANHO_MAXIMO_NOME)
         )
     )
 
