@@ -1,0 +1,28 @@
+resources:
+  jobs:
+    cinedata_pipeline:
+      name: cinedata_pipeline
+      schedule:
+        quartz_cron_expression: 12 0 6 * * ?
+        timezone_id: America/Recife
+        pause_status: UNPAUSED
+      tasks:
+        - task_key: to_Bronze
+          notebook_task:
+            notebook_path: /Workspace/Users/peryledio@gmail.com/atividade-dados-rocket/code/notebooks/Landing_to_Bronze
+            source: WORKSPACE
+        - task_key: to_Silver
+          depends_on:
+            - task_key: to_Bronze
+          notebook_task:
+            notebook_path: /Workspace/Users/peryledio@gmail.com/atividade-dados-rocket/code/notebooks/Bronze_to_Silver
+            source: WORKSPACE
+        - task_key: to_Gold
+          depends_on:
+            - task_key: to_Silver
+          notebook_task:
+            notebook_path: /Workspace/Users/peryledio@gmail.com/atividade-dados-rocket/code/notebooks/Silver_to_Gold
+            source: WORKSPACE
+      queue:
+        enabled: true
+      performance_target: PERFORMANCE_OPTIMIZED
