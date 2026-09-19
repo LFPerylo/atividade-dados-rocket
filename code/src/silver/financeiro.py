@@ -4,10 +4,13 @@ from pyspark.sql import functions as F
 from src.common.deduplicacao import manter_registro_mais_recente_e_completo
 
 # Formatos reais vistos na origem: "97000000", "$ 97000000", "USD 150000000", "34.0M", "250.5K".
+# Até 16 dígitos inteiros: decimal(18,2) comporta no máximo 16 antes da vírgula.
 _PADRAO_VALOR_MONETARIO = (
-    r"^(?:US\$|USD|R\$|\$|€)?\s*(\d+(?:\.\d+)?|\d{1,3}(?:,\d{3})+(?:\.\d+)?)\s*([KMB])?$"
+    r"^(?:US\$|USD|R\$|\$|€)?\s*"
+    r"(\d{1,16}(?:\.\d{1,6})?|\d{1,3}(?:,\d{3}){1,4}(?:\.\d{1,6})?)\s*([KMB])?$"
 )
 _MULTIPLICADOR = {"K": 1_000, "M": 1_000_000, "B": 1_000_000_000}
+_LIMITE_DECIMAL_18_2 = 10**16
 
 
 def higienizar_valor_monetario(df: DataFrame, coluna: str) -> DataFrame:
@@ -16,6 +19,8 @@ def higienizar_valor_monetario(df: DataFrame, coluna: str) -> DataFrame:
     Aceita prefixo de moeda e sufixo K/M/B ("34.0M" = 34 milhões). Qualquer outra coisa
     ("Unknown", "N/A", "Não Informado", texto vazado) vira NULL: apagar letras juntaria
     dígitos soltos em um valor falso, e apagar o "M" transformaria 34 milhões em 34.
+    Valores que não cabem em decimal(18,2) também viram NULL: com ANSI ligado o cast
+    lançaria erro e derrubaria o pipeline por causa de um único registro.
     """
     texto = F.upper(F.trim(F.col(coluna).cast("string")))
     numero = F.regexp_replace(F.regexp_extract(texto, _PADRAO_VALOR_MONETARIO, 1), ",", "")
@@ -24,10 +29,11 @@ def higienizar_valor_monetario(df: DataFrame, coluna: str) -> DataFrame:
         *[F.lit(x) for par in _MULTIPLICADOR.items() for x in par]
     )[sufixo]
     valido = texto.rlike(_PADRAO_VALOR_MONETARIO)
-    valor = numero.cast("decimal(18,2)") * F.coalesce(
-        multiplicador.cast("decimal(18,2)"), F.lit(1).cast("decimal(18,2)")
+    valor = numero.cast("decimal(38,4)") * F.coalesce(
+        multiplicador.cast("decimal(38,0)"), F.lit(1).cast("decimal(38,0)")
     )
-    return df.withColumn(coluna, F.when(valido, valor).otherwise(None).cast("decimal(18,2)"))
+    cabe = F.when(valor < F.lit(_LIMITE_DECIMAL_18_2), valor)
+    return df.withColumn(coluna, F.when(valido, cabe).otherwise(None).cast("decimal(18,2)"))
 
 
 def invalidar_valores_nao_positivos(df: DataFrame, colunas: list[str]) -> DataFrame:

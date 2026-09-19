@@ -10,9 +10,11 @@ def converter_texto_para_numero_seguro(
 ) -> DataFrame:
     """Converte para número apenas quando o texto é um número válido; senão, NULL.
 
-    Valida por regex antes do cast: com ANSI ligado (Databricks Serverless) um cast direto
-    de texto inválido lançaria erro, e o column shift da origem traz texto nessas colunas.
+    Com ANSI ligado (Databricks Serverless) um cast direto lança erro tanto para texto
+    inválido quanto para número grande demais para o tipo (ex.: 99999999999 em INT). O regex
+    filtra o formato e try_cast devolve NULL para o que estoura o tipo, sem derrubar o job.
     """
     padrao = _PADRAO_DECIMAL if tipo == "double" else _PADRAO_INTEIRO
-    valor = F.trim(F.col(coluna).cast("string"))
-    return df.withColumn(coluna, F.when(valor.rlike(padrao), valor.cast(tipo)).otherwise(None))
+    texto = F.trim(F.col(coluna).cast("string"))
+    convertido = F.expr(f"try_cast(trim(cast(`{coluna}` as string)) as {tipo})")
+    return df.withColumn(coluna, F.when(texto.rlike(padrao), convertido).otherwise(None))

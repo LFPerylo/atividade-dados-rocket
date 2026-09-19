@@ -32,3 +32,10 @@ def test_cotacao_dolar_para_dataframe_converte_registros_da_api(spark):
     linhas = {row["cotacaoCompra"] for row in resultado.collect()}
     assert linhas == {5.35, 5.40}
     assert set(resultado.columns) == {"dataHoraCotacao", "cotacaoCompra"}
+
+
+def test_cotacao_dolar_para_dataframe_aceita_lista_vazia(spark):
+    resultado = cotacao_dolar_para_dataframe(spark, [])
+
+    assert resultado.count() == 0
+    assert set(resultado.columns) == {"dataHoraCotacao", "cotacaoCompra"}

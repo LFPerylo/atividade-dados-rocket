@@ -5,13 +5,18 @@ from pyspark.sql import functions as F
 def agregar_pessoas_por_filme(
     df_bridge_person: DataFrame, dim_people: DataFrame, tipo: str
 ) -> DataFrame:
-    """Agrega, por filme, os nomes das pessoas de um tipo (Ator/Diretor) em uma string."""
+    """Agrega, por filme, os nomes das pessoas de um tipo (Ator/Diretor) em uma string.
+
+    Os nomes saem em ordem alfabética: collect_set não tem ordem definida e o texto mudaria a
+    cada execução (forçando a re-vetorização). A bridge do enunciado não guarda a posição no
+    elenco, então a ordem de destaque não está disponível nesta camada.
+    """
     filtrado = dim_people.filter(F.col("tipo_pessoa") == tipo)
     coluna_saida = "atores_principais" if tipo == "Ator" else "diretor"
     return (
         df_bridge_person.join(filtrado, on="sk_person_id", how="inner")
         .groupBy("sk_movie_id")
-        .agg(F.concat_ws(", ", F.collect_set("nome_pessoa")).alias(coluna_saida))
+        .agg(F.concat_ws(", ", F.sort_array(F.collect_set("nome_pessoa"))).alias(coluna_saida))
     )
 
 

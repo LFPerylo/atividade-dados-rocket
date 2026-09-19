@@ -57,8 +57,30 @@ def test_explodir_coluna_entidade_trata_pipe_como_separador(spark):
     assert nomes == {"Marvel Studios", "Legendary Pictures"}
 
 
+def test_padronizar_capitalizacao_preserva_nomes_de_caixa_mista(spark):
+    df = spark.createDataFrame(
+        [
+            (1, "Kiefer O'Reilly"),
+            (2, "Leonardo DiCaprio"),
+            (3, "matthew McConaughey"),
+            (4, "RYAN REYNOLDS"),
+            (5, "ryan reynolds"),
+        ],
+        ["id_filme", "nome_entidade"],
+    )
+
+    resultado = padronizar_capitalizacao(df)
+    nomes = {row["id_filme"]: row["nome_entidade"] for row in resultado.collect()}
+
+    assert nomes[1] == "Kiefer O'Reilly"
+    assert nomes[2] == "Leonardo DiCaprio"
+    assert nomes[3] == "Matthew McConaughey"
+    assert nomes[4] == "Ryan Reynolds"
+    assert nomes[5] == "Ryan Reynolds"
+
+
 def test_padronizar_capitalizacao_usa_title_case(spark):
-    df = spark.createDataFrame([(1, "RYAN reynolds")], ["id_filme", "nome_entidade"])
+    df = spark.createDataFrame([(1, "RYAN REYNOLDS")], ["id_filme", "nome_entidade"])
 
     resultado = padronizar_capitalizacao(df)
 

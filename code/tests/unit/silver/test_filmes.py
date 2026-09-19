@@ -1,8 +1,10 @@
 from pyspark.sql import functions as F
 from src.silver.filmes import (
+    adicionar_ano_lancamento,
     converter_data_lancamento,
     deduplicar_filmes_mais_recentes,
     normalizar_status,
+    renomear_colunas_info_filmes,
     traduzir_status,
     transformar_info_filmes,
 )
@@ -132,3 +134,29 @@ def test_transformar_info_filmes_produz_colunas_finais_e_ano_lancamento(spark):
     }
     assert linha["ano_lancamento"] == 2016
     assert linha["status_filme"] == "Lançado"
+
+
+def test_renomear_colunas_info_filmes_usa_nomes_em_portugues(spark):
+    df = spark.createDataFrame(
+        [(1, "T", "OT", "en", 90, "Released", "s", "t")],
+        ["id", "title", "original_title", "original_language", "runtime", "status",
+         "overview", "tagline"],
+    )
+
+    resultado = renomear_colunas_info_filmes(df)
+
+    assert set(resultado.columns) == {
+        "id_filme", "titulo", "titulo_original", "idioma_original", "duracao_minutos",
+        "status_filme", "sinopse", "frase_divulgacao",
+    }
+
+
+def test_adicionar_ano_lancamento_extrai_o_ano_e_mantem_null(spark):
+    df = spark.createDataFrame(
+        [(1, "2016-02-09"), (2, None)], ["id", "data_lancamento"]
+    ).withColumn("data_lancamento", F.to_date("data_lancamento"))
+
+    resultado = adicionar_ano_lancamento(df)
+    anos = {row["id"]: row["ano_lancamento"] for row in resultado.collect()}
+
+    assert anos == {1: 2016, 2: None}

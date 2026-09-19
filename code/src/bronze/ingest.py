@@ -2,6 +2,14 @@ from datetime import UTC, datetime
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
+from pyspark.sql.types import DoubleType, StringType, StructField, StructType
+
+_SCHEMA_COTACAO = StructType(
+    [
+        StructField("dataHoraCotacao", StringType()),
+        StructField("cotacaoCompra", DoubleType()),
+    ]
+)
 
 
 def adicionar_ingestion_datetime(df: DataFrame, momento: datetime | None = None) -> DataFrame:
@@ -12,4 +20,5 @@ def adicionar_ingestion_datetime(df: DataFrame, momento: datetime | None = None)
 
 def cotacao_dolar_para_dataframe(spark: SparkSession, registros: list[dict]) -> DataFrame:
     """Converte a lista de registros retornados pela API PTAX do Banco Central em DataFrame."""
-    return spark.createDataFrame(registros)
+    # Schema explícito: com lista vazia (API sem cotação na janela) a inferência falharia.
+    return spark.createDataFrame(registros, schema=_SCHEMA_COTACAO)

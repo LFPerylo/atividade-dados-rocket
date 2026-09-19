@@ -1,6 +1,8 @@
 from pyspark.sql import functions as F
 from src.gold.star_schema import (
+    construir_bridge_movie_company,
     construir_bridge_movie_genre,
+    construir_bridge_movie_person,
     construir_dim_companies,
     construir_dim_genres,
     construir_dim_movies,
@@ -119,3 +121,51 @@ def test_construir_dim_reviews_agrega_media_e_contagem(spark):
 
     assert linha["qtd_avaliacoes_usuarios"] == 2
     assert linha["nota_media_usuarios"] == 7.0
+
+
+def _pessoas_empresas(spark):
+    return spark.createDataFrame(
+        [
+            (1, "Ryan Reynolds", "Ator"),
+            (1, "Ryan Reynolds", "Diretor"),
+            (1, "Tim Miller", "Diretor"),
+            (1, "20th Century Fox", "Produtora"),
+            (2, "Ryan Reynolds", "Ator"),
+            (99, "Ator Sem Filme", "Ator"),
+        ],
+        ["id_filme", "nome_entidade", "tipo_entidade"],
+    )
+
+
+def test_construir_bridge_movie_person_separa_homonimos_por_tipo_e_ignora_produtoras(spark):
+    dim_movies = construir_dim_movies(_df_filmes(spark))
+    pessoas = _pessoas_empresas(spark)
+    dim_people = construir_dim_people(pessoas)
+
+    resultado = construir_bridge_movie_person(dim_movies, dim_people, pessoas)
+
+    # filme 1: Reynolds(Ator), Reynolds(Diretor), Miller(Diretor); filme 2: Reynolds(Ator)
+    assert resultado.count() == 4
+    assert set(resultado.columns) == {"sk_movie_id", "sk_person_id"}
+    assert resultado.select("sk_person_id").distinct().count() == 3
+
+
+def test_construir_bridge_movie_person_ignora_filmes_fora_da_dim_movies(spark):
+    dim_movies = construir_dim_movies(_df_filmes(spark))
+    pessoas = _pessoas_empresas(spark)
+    dim_people = construir_dim_people(pessoas)
+
+    resultado = construir_bridge_movie_person(dim_movies, dim_people, pessoas)
+
+    assert resultado.join(dim_movies, "sk_movie_id").where("id_filme = '99'").count() == 0
+
+
+def test_construir_bridge_movie_company_conecta_so_produtoras(spark):
+    dim_movies = construir_dim_movies(_df_filmes(spark))
+    pessoas = _pessoas_empresas(spark)
+    dim_companies = construir_dim_companies(pessoas)
+
+    resultado = construir_bridge_movie_company(dim_movies, dim_companies, pessoas)
+
+    assert resultado.count() == 1
+    assert set(resultado.columns) == {"sk_movie_id", "sk_company_id"}

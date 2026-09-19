@@ -48,3 +48,17 @@ def test_construir_genai_context_usa_fallback_quando_diretor_e_sinopse_sao_nulos
     assert linhas["2"] is not None
     assert "direção não informada" in linhas["2"]
     assert "sinopse não disponível" in linhas["2"]
+
+
+def test_agregar_pessoas_por_filme_ordena_de_forma_deterministica(spark):
+    bridge = spark.createDataFrame(
+        [(1, 10), (1, 11), (1, 12)], ["sk_movie_id", "sk_person_id"]
+    )
+    dim_people = spark.createDataFrame(
+        [(10, "Zoe", "Ator"), (11, "Ana", "Ator"), (12, "Bia", "Ator")],
+        ["sk_person_id", "nome_pessoa", "tipo_pessoa"],
+    )
+
+    resultado = agregar_pessoas_por_filme(bridge, dim_people, "Ator")
+
+    assert resultado.collect()[0]["atores_principais"] == "Ana, Bia, Zoe"

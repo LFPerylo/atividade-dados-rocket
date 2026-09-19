@@ -38,8 +38,18 @@ def explodir_coluna_entidade(df: DataFrame, coluna: str, tipo_entidade: str) -> 
 
 
 def padronizar_capitalizacao(df: DataFrame, coluna: str = "nome_entidade") -> DataFrame:
-    """Padroniza a capitalização (Title Case) do nome da pessoa/empresa."""
-    return df.withColumn(coluna, F.initcap(F.col(coluna)))
+    """Padroniza a capitalização do nome da pessoa/empresa, preservando nomes de caixa mista.
+
+    Só as palavras escritas inteiras em maiúsculas ou em minúsculas viram Title Case; palavras
+    já em caixa mista (O'Reilly, DiCaprio, McConaughey) são mantidas. Um initcap direto
+    deformaria esses nomes ("O'reilly", "Dicaprio").
+    """
+    palavras = F.split(F.col(coluna), " ")
+    normalizadas = F.transform(
+        palavras,
+        lambda p: F.when((p == F.upper(p)) | (p == F.lower(p)), F.initcap(p)).otherwise(p),
+    )
+    return df.withColumn(coluna, F.array_join(normalizadas, " "))
 
 
 def unificar_pessoas_empresas(df: DataFrame) -> DataFrame:

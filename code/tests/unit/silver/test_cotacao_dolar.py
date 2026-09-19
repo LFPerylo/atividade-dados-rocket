@@ -1,3 +1,4 @@
+import pytest
 from pyspark.sql import functions as F
 from src.silver.cotacao_dolar import (
     obter_cotacao_mais_recente,
@@ -49,3 +50,28 @@ def test_transformar_cotacao_dolar_produz_serie_continua(spark):
 
     assert resultado.count() == 3
     assert set(resultado.columns) == {"data_cotacao", "cotacao_dolar"}
+
+
+def test_obter_cotacao_mais_recente_ignora_dias_sem_valor(spark):
+    df = spark.createDataFrame(
+        [("2026-09-11", 5.30), ("2026-09-12", None)], ["data_cotacao", "cotacao_dolar"]
+    ).withColumn("data_cotacao", F.to_date("data_cotacao"))
+
+    assert obter_cotacao_mais_recente(df) == 5.30
+
+
+def test_obter_cotacao_mais_recente_sem_nenhuma_cotacao_gera_erro_claro(spark):
+    vazio = spark.createDataFrame([], "data_cotacao date, cotacao_dolar double")
+
+    with pytest.raises(ValueError, match="cota"):
+        obter_cotacao_mais_recente(vazio)
+
+
+def test_transformar_cotacao_dolar_usa_historico_quando_a_janela_atual_esta_vazia(spark):
+    historico = spark.createDataFrame(
+        [("2026-09-05 10:00:00", 5.10)], ["dataHoraCotacao", "cotacaoCompra"]
+    )
+
+    serie = transformar_cotacao_dolar(historico, spark, "2026-09-11", "2026-09-13")
+
+    assert obter_cotacao_mais_recente(serie) == 5.10

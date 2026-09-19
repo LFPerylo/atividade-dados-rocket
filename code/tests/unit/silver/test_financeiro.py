@@ -125,3 +125,21 @@ def test_transformar_financeiro_filmes_deduplica_ids_repetidos_preferindo_o_mais
     assert resultado.count() == 2
     assert valores[1] == Decimal("300.00")
     assert valores[2] is None
+
+
+def test_higienizar_valor_monetario_anula_valor_que_estoura_decimal(spark):
+    df = spark.createDataFrame(
+        [
+            (1, "12345678901234567"),
+            (2, "9999999999999999B"),
+            (3, "9999999999999999"),
+        ],
+        ["id", "orcamento_usd"],
+    )
+
+    resultado = higienizar_valor_monetario(df, "orcamento_usd")
+    valores = {row["id"]: row["orcamento_usd"] for row in resultado.collect()}
+
+    assert valores[1] is None
+    assert valores[2] is None
+    assert valores[3] == Decimal("9999999999999999.00")
