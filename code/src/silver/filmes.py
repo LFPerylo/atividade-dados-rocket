@@ -11,7 +11,11 @@ _TRADUCAO_STATUS = {
     "CANCELED": "Cancelado",
 }
 
-_FORMATOS_DATA = ["yyyy-MM-dd", "MM-dd-yyyy", "dd/MM/yyyy"]
+_FORMATOS_DATA = [
+    ("yyyy-MM-dd", r"^\d{4}-\d{2}-\d{2}$"),
+    ("MM-dd-yyyy", r"^\d{2}-\d{2}-\d{4}$"),
+    ("dd/MM/yyyy", r"^\d{2}/\d{2}/\d{4}$"),
+]
 
 
 def renomear_colunas_info_filmes(df: DataFrame) -> DataFrame:
@@ -57,12 +61,17 @@ def converter_data_lancamento(
 ) -> DataFrame:
     """Testa múltiplos formatos de data; se nenhum funcionar, o valor vira NULL.
 
-    Usa try_to_timestamp porque com ANSI ligado (padrão do Databricks Serverless) to_date
-    lança erro quando o formato não bate, em vez de devolver NULL.
+    Com ANSI ligado (padrão do Databricks Serverless), converter texto fora do formato
+    lança erro em vez de devolver NULL. Por isso cada formato só é tentado quando o texto
+    tem a forma esperada (regex), e try_to_timestamp cobre datas impossíveis (31/02/2022).
     """
+    texto = F.trim(F.col(coluna_origem))
     tentativas = [
-        F.try_to_timestamp(F.col(coluna_origem), F.lit(fmt)).cast("date")
-        for fmt in _FORMATOS_DATA
+        F.when(
+            texto.rlike(padrao),
+            F.try_to_timestamp(texto, F.lit(formato)).cast("date"),
+        )
+        for formato, padrao in _FORMATOS_DATA
     ]
     return df.withColumn(coluna_destino, F.coalesce(*tentativas))
 

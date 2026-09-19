@@ -68,6 +68,22 @@ def test_converter_data_lancamento_aceita_multiplos_formatos(spark):
     assert valores[3] is None
 
 
+def test_converter_data_lancamento_formato_dia_barra_mes_e_datas_impossiveis(spark):
+    df = spark.createDataFrame(
+        [(1, "23/05/2022"), (2, "31/02/2022"), (3, ""), (4, None), (5, "2022")],
+        ["id", "release_date"],
+    )
+
+    resultado = converter_data_lancamento(df)
+
+    valores = {row["id"]: row["data_lancamento"] for row in resultado.collect()}
+    assert str(valores[1]) == "2022-05-23"
+    assert valores[2] is None
+    assert valores[3] is None
+    assert valores[4] is None
+    assert valores[5] is None
+
+
 def test_transformar_info_filmes_produz_colunas_finais_e_ano_lancamento(spark):
     df = spark.createDataFrame(
         [
