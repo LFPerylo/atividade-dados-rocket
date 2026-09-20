@@ -58,6 +58,54 @@ contexto de IA completo, gêneros dentro do domínio, integridade das chaves das
 
 ![Relatório da validate_Gold](docs/evidencias/validate_gold_relatorio.png)
 
+## Desafio de Analytics
+
+Respostas às 6 perguntas de negócio (seção 4 do enunciado), geradas pelo `Silver_to_Gold`. As
+consultas em si estão no notebook; aqui é um **snapshot de uma execução** — a receita em R$ e a
+"data limite" das perguntas 5 e 6 mudam a cada execução (cotação do dia e novos lançamentos).
+
+> Executado em **20/09/2026**, cotação do dólar (API do Banco Central): **R$ 5,1569**.
+> Data limite (último lançamento já ocorrido): **19/02/2026**.
+
+**1. Receita total (R$) de todos os filmes:** R$ 837.771.586.093,11
+
+**2. Top 5 filmes por popularidade:**
+
+| # | Título | Popularidade |
+|---|---|---|
+| 1 | blue beetle | 2994.357 |
+| 2 | Gran Turismo | 2680.593 |
+| 3 | La Fellinette | 2020.0 |
+| 4 | The Fear Footage 2: Curse of the Tape | 2019.0 |
+| 5 | wwe survivor series 2018 | 2018.0 |
+
+Os três últimos são o [column shift residual documentado abaixo](#limitações-conhecidas): o ano
+de lançamento ficou na coluna de popularidade.
+
+**3. Filmes por gênero (top 5 de 19):** Drama 32.306 · Documentary 19.073 · Comedy 18.630 ·
+Thriller 10.276 · Horror 9.728
+
+**4. Top 10 filmes por receita (título, US$, R$, posição no ranking):**
+
+| # | Título | Receita (US$) | Receita (R$) |
+|---|---|---|---|
+| 1 | Avengers: Endgame | 2.800.000.000,00 | 14.439.320.000,00 |
+| 2 | Avatar: The Way of Water | 2.320.250.281,00 | 11.965.298.674,09 |
+| 3 | AVENGERS: INFINITY WAR | 2.052.415.039,00 | 10.584.099.114,62 |
+| 4 | spider-man: no way home | 1.921.847.111,00 | 9.910.773.366,72 |
+| 5 | The Lion King | 1.663.075.401,00 | 8.576.313.535,42 |
+| 6 | Top Gun: Maverick | 1.488.732.821,00 | 7.677.246.284,61 |
+| 7 | Barbie | 1.428.545.028,00 | 7.366.863.854,89 |
+| 8 | The Super Mario Bros. Movie | 1.355.725.263,00 | 6.991.339.608,76 |
+| 9 | Black Panther | 1.349.926.083,00 | 6.961.433.817,42 |
+| 10 | Star Wars: The Last Jedi | 1.332.698.830,00 | 6.872.594.596,43 |
+
+**5. Ator com mais participações nos filmes lançados nos últimos 2 anos:** Kevin Hart, com
+**66** participações (2º: Josh Hartnett, 61).
+
+**6. Produtora com maior lucro nos últimos 5 anos:** Universal Pictures, **US$ 5.772.329.679,00**
+de lucro (2ª: Marvel Studios, US$ 4.953.462.823,00).
+
 ## Como rodar os testes localmente
 
 Pré-requisitos: **Python 3.12** e **JDK 17** (o PySpark 3.5 não roda com Python 3.14 nem com JDK muito
