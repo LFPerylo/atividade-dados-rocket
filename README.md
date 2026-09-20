@@ -75,12 +75,9 @@ consultas em si estão no notebook; aqui é um **snapshot de uma execução** �
 |---|---|---|
 | 1 | blue beetle | 2994.357 |
 | 2 | Gran Turismo | 2680.593 |
-| 3 | La Fellinette | 2020.0 |
-| 4 | The Fear Footage 2: Curse of the Tape | 2019.0 |
-| 5 | wwe survivor series 2018 | 2018.0 |
-
-Os três últimos são o [column shift residual documentado abaixo](#limitações-conhecidas): o ano
-de lançamento ficou na coluna de popularidade.
+| 3 | The Nun II | 1692.778 |
+| 4 | Meg 2: The Trench | 1567.273 |
+| 5 | Retribution | 1547.22 |
 
 **3. Filmes por gênero (top 5 de 19):** Drama 32.306 · Documentary 19.073 · Comedy 18.630 ·
 Thriller 10.276 · Horror 9.728
@@ -148,6 +145,7 @@ tomada em cada um (regras completas no enunciado):
 |---|---|
 | Aspas quebradas e texto de outras bases dentro das colunas numéricas (`movies_metrics` tem linhas com até 24 campos) | Bronze lê uma linha física por registro, sem `multiLine` (com ele o Spark perdia ~4 mil linhas). A Silver converte só o que é número válido; o resto vira `NULL`. |
 | `popularity` com vírgula decimal (`89,985`) e texto vazado | Só troca vírgula por ponto; nunca apaga caracteres (apagar juntava dígitos de texto e criava números falsos). |
+| Linhas com column shift onde `popularity` parece um número válido, mas é outro dado arrastado pelo deslocamento (ex.: "Battipaglia 1969" tem `popularity=1969`, o número do próprio título, não uma métrica) | Se as colunas de nota/contagem da mesma linha trazem texto (não célula vazia), a popularidade da linha também vira `NULL`, mesmo parecendo válida — um número sintaticamente correto não é dado confiável nessas linhas. |
 | `budget` em `97000000`, `$ 97000000`, `USD 150000000`, `34.0M`, `250.5K`; `revenue` com `Unknown`/`Não Informado`/negativos | Parse estrito de prefixo de moeda e sufixo K/M/B; ausência, zero, negativo e valor fora do intervalo do tipo viram `NULL`. |
 | ~86% dos orçamentos e ~88% das receitas são `0` na origem | Tratados como ausentes, conforme o enunciado; por isso há muitos `NULL` na fato. |
 | Mesmo filme repetido até 34 vezes (info, financials e metrics), às vezes com valores conflitantes | Mantém o registro mais recente; no empate, o mais completo; por fim um hash do conteúdo (resultado determinístico). Garante um registro por filme na fato. |
@@ -157,11 +155,6 @@ tomada em cada um (regras completas no enunciado):
 
 ### Limitações conhecidas
 
-- **Quatro linhas de `movies_metrics` deslocadas por inteiro** (o ano de lançamento caiu na coluna
-  `popularity` e há texto em `averageRating`/`numVotes`). Seguindo o enunciado, só as células com
-  texto viram `NULL`; a popularidade (`2018`, `2019`, `2020`) é numérica e permanece, por isso esses
-  filmes aparecem no top 5 de popularidade (pergunta 2). Anular a linha inteira seria uma regra além
-  do que o enunciado pede.
 - **Ordem do elenco:** o texto para IA lista os atores em ordem alfabética (determinística), porque a
   tabela-ponte pedida no enunciado não guarda a posição no elenco.
 - **A validação roda depois da escrita:** ela avisa (reprova o Job), mas não desfaz a Gold já gravada.
