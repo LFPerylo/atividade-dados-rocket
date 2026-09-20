@@ -160,8 +160,3 @@ tomada em cada um (regras completas no enunciado):
 - **A validação roda depois da escrita:** ela avisa (reprova o Job), mas não desfaz a Gold já gravada.
 - **Bronze acumula:** o modo `append` (exigido) faz a Bronze crescer a cada execução; a Silver absorve
   as repetições pela deduplicação.
-
-## Documentação de projeto
-
-- Spec de design: [docs/superpowers/specs/2026-09-18-cinedata-pipeline-design.md](docs/superpowers/specs/2026-09-18-cinedata-pipeline-design.md)
-- Plano de implementação: [docs/superpowers/plans/2026-09-18-cinedata-pipeline-plan.md](docs/superpowers/plans/2026-09-18-cinedata-pipeline-plan.md)
