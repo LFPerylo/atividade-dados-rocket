@@ -1,5 +1,6 @@
 from src.silver.engajamento import (
     converter_texto_para_numero_seguro,
+    detectar_linha_com_column_shift,
     invalidar_contagens_negativas,
     invalidar_notas_fora_da_escala,
     limpar_separador_decimal,
@@ -70,6 +71,42 @@ def test_popularidade_com_texto_vazado_vira_null_e_nao_junta_digitos(spark):
     assert valores[1] is None
     assert valores[2] == 89.985
     assert valores[3] is None  # aspa sobrando e resto de texto vazado, nao o numero 28
+
+
+def test_detectar_linha_com_column_shift_marca_texto_mas_nao_celula_vazia(spark):
+    df = spark.createDataFrame(
+        [
+            (1, "10.0", None, "Italian", None),  # column shift: texto onde deveria ter numero
+            (2, "7.5", 100, None, 5000),  # ausencia legitima (IMDb sem dados), nao e shift
+        ],
+        ["id", "nota_media_tmdb", "qtd_votos_tmdb", "nota_media_imdb", "qtd_votos_imdb"],
+    )
+
+    resultado = detectar_linha_com_column_shift(df)
+    marcadas = {row["id"]: row["_linha_com_column_shift"] for row in resultado.collect()}
+
+    assert marcadas == {1: True, 2: False}
+
+
+def test_popularidade_da_linha_com_column_shift_vira_null_mesmo_parecendo_valida(spark):
+    # Caso real: "Battipaglia 1969" tem popularity=1969 (numero do proprio titulo, nao uma
+    # metrica), com texto ("Italian") no lugar de nota_media_imdb -- sinal do column shift.
+    df = spark.createDataFrame(
+        [
+            (1, "1969", "10.0", None, "Italian", None, "2026-01-01T00:00:00"),
+            (2, "72.735", "7.6", 28894, "8.0", 1270339, "2026-01-01T00:00:00"),
+        ],
+        [
+            "id", "popularity", "vote_average", "vote_count", "averageRating", "numVotes",
+            "ingestion_datetime",
+        ],
+    )
+
+    resultado = transformar_metricas_engajamento(df)
+    valores = {row["id_filme"]: row["popularidade"] for row in resultado.collect()}
+
+    assert valores[1] is None
+    assert valores[2] == 72.735
 
 
 def test_transformar_metricas_engajamento_produz_colunas_finais(spark):
