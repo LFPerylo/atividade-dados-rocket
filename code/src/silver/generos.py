@@ -3,7 +3,7 @@ from pyspark.sql import functions as F
 
 # Domínio de gêneros do catálogo TMDB. Na origem, a coluna traz também sinopses, caminhos de
 # imagem e números deslocados (column shift); só o que pertence a este conjunto é gênero.
-_GENEROS_VALIDOS = [
+GENEROS_VALIDOS = [
     "Action", "Adventure", "Animation", "Comedy", "Crime", "Documentary", "Drama", "Family",
     "Fantasy", "History", "Horror", "Music", "Mystery", "Romance", "Science Fiction",
     "TV Movie", "Thriller", "War", "Western",
@@ -25,7 +25,7 @@ def explodir_generos(df: DataFrame, coluna: str = "genres") -> DataFrame:
 
 def remover_residuos_invalidos(df: DataFrame, coluna: str = "nome_genero") -> DataFrame:
     """Mantém apenas valores do domínio de gêneros (descarta branco, número, texto, caminho)."""
-    return df.filter(F.col(coluna).isin(*_GENEROS_VALIDOS))
+    return df.filter(F.col(coluna).isin(*GENEROS_VALIDOS))
 
 
 def transformar_generos(df: DataFrame) -> DataFrame:
