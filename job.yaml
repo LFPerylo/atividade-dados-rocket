@@ -3,7 +3,7 @@ resources:
     cinedata_pipeline:
       name: cinedata_pipeline
       schedule:
-        quartz_cron_expression: 12 0 6 * * ?
+        quartz_cron_expression: 18 0 6 * * ?
         timezone_id: America/Recife
         pause_status: UNPAUSED
       tasks:
@@ -23,6 +23,17 @@ resources:
           notebook_task:
             notebook_path: /Workspace/Users/peryledio@gmail.com/atividade-dados-rocket/code/notebooks/Silver_to_Gold
             source: WORKSPACE
+        - task_key: validate_Gold
+          depends_on:
+            - task_key: to_Gold
+          notebook_task:
+            notebook_path: /Workspace/Users/peryledio@gmail.com/atividade-dados-rocket/code/notebooks/Validate_Gold
+            source: WORKSPACE
+          environment_key: Default
       queue:
         enabled: true
+      environments:
+        - environment_key: Default
+          spec:
+            environment_version: "5"
       performance_target: PERFORMANCE_OPTIMIZED
